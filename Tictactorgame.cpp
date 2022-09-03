@@ -1,122 +1,250 @@
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
-#include <stdlib.h>
+#include <list>
+#include <string>
 using namespace std;
-//Array for the board
-char board[3][3] = {{'1','2','3'},{'4','5','6'},{'7','8','9'}};
-//Variable Declaration
-int choice;
-int row,column;
-char turn = 'X';
-bool draw = false;
 
-//Function to show the current status of the gaming board
+typedef struct {
+  int *row;
+} WinList;
 
-void display_board(){
+class Player {
+private:
+  string name;
+  int score;
 
-    //Rander Game Board LAYOUT
+public:
+  Player() : Player{""} {}
+  Player(string n) : score{0}, name{n} {}
 
-    cout<<"PLAYER - 1 [X]t PLAYER - 2 [O]nn";
-    cout<<"tt     |     |     n";
-    cout<<"tt  "<<board[0][0]<<"  | "<<board[0][1]<<"  |  "<<board[0][2]<<" n";
-    cout<<"tt_____|_____|_____n";
-    cout<<"tt     |     |     n";
-    cout<<"tt  "<<board[1][0]<<"  | "<<board[1][1]<<"  |  "<<board[1][2]<<" n";
-    cout<<"tt_____|_____|_____n";
-    cout<<"tt     |     |     n";
-    cout<<"tt  "<<board[2][0]<<"  | "<<board[2][1]<<"  |  "<<board[2][2]<<" n";
-    cout<<"tt     |     |     n";
-}
+  void won() {
+    // increment the score
+    score++;
+  }
+  int getScore() { return this->score; }
 
-//Function to get the player input and update the board
+  string getName() { return this->name; }
+};
 
-void player_turn(){
-    if(turn == 'X'){
-        cout<<"ntPlayer - 1 [X] turn : ";
+class Game {
+private:
+  char board[9];
+  int emptyIndex[9];
+  int gameOn, againstComputer;
+  int emptyCount;
+  WinList winlist[8];
+
+  void displayBoard() {
+    cout << endl;
+    cout << "   |   |   " << endl;
+    cout << " " << board[0] << " | " << board[1] << " | " << board[2] << endl;
+    cout << "   |   |   " << endl;
+    cout << "-----------" << endl;
+    cout << "   |   |   " << endl;
+    cout << " " << board[3] << " | " << board[4] << " | " << board[5] << endl;
+    cout << "   |   |   " << endl;
+    cout << "-----------" << endl;
+    cout << "   |   |   " << endl;
+    cout << " " << board[6] << " | " << board[7] << " | " << board[8] << endl;
+    cout << "   |   |   " << endl;
+    cout << endl;
+  }
+
+  void computerInput() {
+    int pos;
+    pos = rand() % 10;
+    if (emptyIndex[pos] == 1) {
+      if (emptyCount < 0)
+        return;
+      computerInput();
+    } else {
+      cout << "Computer choose: " << pos + 1 << endl;
+      emptyIndex[pos] = 1;
+      emptyCount -= 1;
+      board[pos] = 'O';
     }
-    else if(turn == 'O'){
-        cout<<"ntPlayer - 2 [O] turn : ";
+  }
+
+  void playerInput(Player &player) {
+    int pos;
+    cout << endl;
+    cout << "\t" << player.getName() << " Turn: ";
+    cout << "\t Enter the position " << endl;
+    cin >> pos;
+    pos -= 1;
+    if (emptyIndex[pos] == 1) {
+      cout << "-----Position not empty-------" << endl;
+      playerInput(player);
+    } else {
+      emptyIndex[pos] = 1;
+      emptyCount -= 1;
+      player.getName().compare("Player I") == 0 ? board[pos] = 'X'
+                                                : board[pos] = 'O';
     }
-    //Taking input from user
-    //updating the board according to choice and reassigning the turn Start
+  }
 
-    cin>> choice;
+  void checkWin(Player &p1, Player &p2) {
+    int i, j, k;
+    bool flag = false;
+    char first_symbol;
+    for (i = 0; i < 8; i++) {
+      first_symbol = board[winlist[i].row[0]];
 
-    //switch case to get which row and column will be update
-
-    switch(choice){
-        case 1: row=0; column=0; break;
-        case 2: row=0; column=1; break;
-        case 3: row=0; column=2; break;
-        case 4: row=1; column=0; break;
-        case 5: row=1; column=1; break;
-        case 6: row=1; column=2; break;
-        case 7: row=2; column=0; break;
-        case 8: row=2; column=1; break;
-        case 9: row=2; column=2; break;
-        default:
-            cout<<"Invalid Move";
+      if ((first_symbol != 'X') && (first_symbol != 'O')) {
+        flag = false;
+        continue;
+      }
+      flag = true;
+      for (j = 0; j < 3; j++) {
+        if (first_symbol != board[winlist[i].row[j]]) {
+          flag = false;
+          break;
+        }
+      }
+      if (flag) {
+        gameOn = 0;
+        if (first_symbol == 'X') {
+          cout << "-----------------------" << endl;
+          cout << "\t Player I WON" << endl;
+          cout << "-----------------------" << endl;
+          p1.won();
+        } else {
+          p2.won();
+          if (againstComputer) {
+            cout << "-----------------------" << endl;
+            cout << "\t Computer WON" << endl;
+            cout << "-----------------------" << endl;
+          } else {
+            cout << "-----------------------" << endl;
+            cout << "\t Player II WON" << endl;
+            cout << "-----------------------" << endl;
+          }
+        }
+        displayScore(p1, p2);
+        break;
+      }
     }
+  }
 
-    if(turn == 'X' && board[row][column] != 'X' && board[row][column] != 'O'){
-        //updating the position for 'X' symbol if
-        //it is not already occupied
-        board[row][column] = 'X';
-        turn = 'O';
-    }else if(turn == 'O' && board[row][column] != 'X' && board[row][column] != 'O'){
-        //updating the position for 'O' symbol if
-        //it is not already occupied
-        board[row][column] = 'O';
-        turn = 'X';
-    }else {
-        //if input position already filled
-        cout<<"Box already filled!n Please choose another!!nn";
-        player_turn();
+  void play(Player &p1, Player &p2) {
+    char rematch = '\0';
+    int hand = 0;
+    gameOn = 1;
+    displayBoard();
+    while ((emptyCount > 0) && (gameOn != 0)) {
+
+      if (againstComputer)
+        hand == 1 ? computerInput() : playerInput(p2);
+      else
+        hand == 1 ? playerInput(p1) : playerInput(p2);
+      hand = !hand;
+      displayBoard();
+      checkWin(p1, p2);
     }
-    /* Ends */
-    display_board();
-}
-
-//Function to get the game status e.g. GAME WON, GAME DRAW GAME IN CONTINUE MODE
-
-bool gameover(){
-    //checking the win for Simple Rows and Simple Column
-    for(int i=0; i<3; i++)
-    if(board[i][0] == board[i][1] && board[i][0] == board[i][2] || board[0][i] == board[1][i] && board[0][i] == board[2][i])
-    return false;
-
-    //checking the win for both diagonal
-
-    if(board[0][0] == board[1][1] && board[0][0] == board[2][2] || board[0][2] == board[1][1] && board[0][2] == board[2][0])
-    return false;
-
-    //Checking the game is in continue mode or not
-    for(int i=0; i<3; i++)
-    for(int j=0; j<3; j++)
-    if(board[i][j] != 'X' && board[i][j] != 'O')
-    return true;
-
-    //Checking the if game already draw
-    draw = true;
-    return false;
-}
-
-//Main Method in program
-
-int main()
-{
-    cout<<"tttT I C K -- T A C -- T O E -- G A M Ettt";
-    cout<<"nttttFOR 2 PLAYERSnttt";
-    while(gameover()){
-        display_board();
-        player_turn();
-        gameover();
+    if (emptyCount <= 0) {
+      cout << "      -----------------------" << endl;
+      cout << "\t No WINNER" << endl;
+      cout << "      -----------------------" << endl;
     }
-    if(turn == 'X' && draw == false){
-        cout<<"nnCongratulations!Player with 'X' has won the game";
+    cout << endl;
+    cout << "Rematch Y/N: ";
+    cin >> rematch;
+    if ((rematch == 'Y') || (rematch == 'y')) {
+      init();
+      play(p1, p2);
     }
-    else if(turn == 'O' && draw == false){
-        cout<<"nnCongratulations!Player with 'O' has won the game";
-    }
+  }
+  void displayScore(Player &p1, Player &p2) {
+    cout << endl;
+    cout << "\t SCORE: \t";
+    if (againstComputer)
+      cout << " Player I: " << p1.getScore()
+           << " \t Computer: " << p2.getScore() << endl;
     else
-    cout<<"nnGAME DRAW!!!nn";
-} 
+      cout << " Player I: " << p1.getScore()
+           << " \t Player II: " << p2.getScore() << endl;
+  }
+
+public:
+  Game() : emptyCount{0}, gameOn{1}, againstComputer{0} {
+    init();
+    winlist[0].row = new int[3]{0, 1, 2};
+    winlist[1].row = new int[3]{3, 4, 5};
+    winlist[2].row = new int[3]{6, 7, 8};
+    winlist[3].row = new int[3]{0, 3, 6};
+    winlist[4].row = new int[3]{1, 4, 7};
+    winlist[5].row = new int[3]{2, 5, 8};
+    winlist[6].row = new int[3]{0, 4, 8};
+    winlist[7].row = new int[3]{2, 4, 6};
+  }
+
+  void init() {
+    gameOn = 1;
+
+    emptyCount = 0;
+    srand(time(0));
+    for (size_t i = 0; i < 10; i++) {
+      emptyIndex[i] = 0;
+      board[i] = (i + 1) + '0';
+      emptyCount++;
+    }
+    emptyCount--;
+  }
+
+  void onePlayerGame() {
+    // Creating Player
+    Player p("Player I");
+    Player c("Computer");
+    cout << "       -----------------------" << endl;
+    cout << "\t Player I: X \t Computer: O" << endl;
+    cout << "       -----------------------" << endl;
+    cout << endl;
+    againstComputer = 1;
+    play(c, p);
+  }
+
+  void twoPlayerGame() {
+    // Creating Player
+    Player p("Player I");
+    Player c("Player II");
+    cout << "       -----------------------" << endl;
+    cout << "\t Player I: X \t Player II: O" << endl;
+    cout << "       -----------------------" << endl;
+    cout << endl;
+    againstComputer = 0;
+    play(c, p);
+  }
+};
+
+int main() {
+  int ch;
+
+  while (1) {
+    cout << "      ----------MENU----------" << endl;
+    cout << "\t 1. 1 Player game" << endl;
+    cout << "\t 2. 2 Player game" << endl;
+    cout << "\t 3. To exit " << endl;
+    cout << "      ------------------------" << endl;
+    cout << endl;
+    cout << "\t Select an option" << endl;
+    cin >> ch;
+    switch (ch) {
+    case 1: {
+      Game *game = new Game;
+      game->init();
+      game->onePlayerGame();
+    } break;
+    case 2: {
+      Game *game = new Game;
+      game->init();
+      game->twoPlayerGame();
+    } break;
+    case 3:
+      return 0;
+    default:
+      cout << "OOPs Invalid Option! TRY AGAIN";
+    }
+  }
+  return 0;
+}
